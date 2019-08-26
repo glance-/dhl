@@ -1,0 +1,13 @@
+register:
+    description: Start tracking a package
+    fields:
+        package_id:
+            description: The id of the package to track.
+            example: UA123456789SE
+
+unregister:
+    description: Stop tracking a package
+    fields:
+        package_id:
+            description: The id of the package to stop to track.
+            example: UA123456789SE
