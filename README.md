@@ -9,7 +9,7 @@ sensor:
   - platform: postnord
     api_key: !secret postnord_api_key
 ```
-And you get your own api key by registring at https://developer.postnord.com/
+And you get your own api key by registering at https://developer.postnord.com/
 
 
 After that you can start to track your packages by calling the service
@@ -17,8 +17,8 @@ After that you can start to track your packages by calling the service
 `{"package_id": "UA123456789SE"}` to have home-assistant start tracking
 that package.
 
-And when you loose intrest in that package, you just stop tracking it by
-calling `postnord.unregister` which a corresponding argument.
+And when you loose interest in that package, you just stop tracking it by
+calling `postnord.unregister` with a corresponding argument.
 
 
 To view all your packages in a nice fashion, I use the custom-group-card[1]
