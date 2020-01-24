@@ -55,8 +55,6 @@ ENTITY_ID_FORMAT = DOMAIN + ".{}"
 
 POSTNORD_API_findByIdentifier_URL = "https://api2.postnord.com/rest/shipment/v2/trackandtrace/findByIdentifier.json?apikey={}&id={}"
 
-GROUP_NAME_ALL_POSTNORD_PACKAGES = "all postnord packages"
-
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the postnord sensor"""
@@ -64,8 +62,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     # Use the EntityComponent to track all packages, and create a group of them
     if component is None:
-        component = hass.data[DOMAIN] = EntityComponent(_LOGGER, DOMAIN, hass,
-                group_name=GROUP_NAME_ALL_POSTNORD_PACKAGES)
+        component = hass.data[DOMAIN] = EntityComponent(_LOGGER, DOMAIN, hass)
 
     update_interval = config.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL)
 
