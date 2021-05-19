@@ -203,6 +203,10 @@ class DHLSensor(RestoreEntity):
                     da = shipment.get("destination", {}).get("address", {})
                     self._attributes["destination countryCode"] = da.get("countryCode", "UNKNOWN")
                     self._attributes["destination addressLocality"] = da.get("addressLocality", "UNKNOWN")
+
+                    sla = shipment.get("status", {}).get("location", {}).get("address", {})
+                    self._attributes["status countryCode"] = sla.get("countryCode", "UNKNOWN")
+                    self._attributes["status addressLocality"] = sla.get("addressLocality", "UNKNOWN")
                 except:
                     pass
             else:
