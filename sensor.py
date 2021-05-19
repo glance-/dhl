@@ -188,7 +188,7 @@ class DHLSensor(RestoreEntity):
         for shipment in response["shipments"]:
             if shipment["id"] == self._package_id:
                 # Debug log whole structure for future work
-                _LOGGER.debug(shipment["id"])
+                _LOGGER.debug(shipment)
 
                 # Found the right shipment
                 self._state = shipment.get("status", {}).get("status", STATE_UNKNOWN)
