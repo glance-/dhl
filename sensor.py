@@ -1,4 +1,4 @@
-"""Track packages from postnord via api"""
+"""Track packages from dhl via api"""
 from urllib.parse import urlparse
 import json
 import logging
@@ -24,14 +24,14 @@ from homeassistant.helpers.entity_component import EntityComponent
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = "postnord"
+DOMAIN = "dhl"
 
-REGISTRATIONS_FILE = "postnord.conf"
+REGISTRATIONS_FILE = "dhl.conf"
 
 SERVICE_REGISTER = "register"
 SERVICE_UNREGISTER = "unregister"
 
-# Get at https://developer.postnord.com/
+# Get at https://developer.dhl.com/
 ATTR_API_KEY = "api_key"
 
 ICON = "mdi:package-variant-closed"
@@ -53,11 +53,11 @@ SUBSCRIPTION_SCHEMA = vol.All(
 
 ENTITY_ID_FORMAT = DOMAIN + ".{}"
 
-POSTNORD_API_findByIdentifier_URL = "https://api2.postnord.com/rest/shipment/v2/trackandtrace/findByIdentifier.json?apikey={}&id={}"
+DHL_API_track_shipments_URL = "https://api-eu.dhl.com/track/shipments?language=en&trackingNumber={}"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Setup the postnord sensor"""
+    """Setup the dhl sensor"""
     component = hass.data.get(DOMAIN)
 
     # Use the EntityComponent to track all packages, and create a group of them
@@ -84,7 +84,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         await hass.async_add_job(save_json, json_path, registrations)
 
         return await component.async_add_entities([
-            PostnordSensor(hass, package_id, api_key, update_interval)])
+            DHLSensor(hass, package_id, api_key, update_interval)])
 
     hass.services.async_register(
         DOMAIN,
@@ -115,7 +115,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     if registrations is None:
         return None
 
-    return await component.async_add_entities([PostnordSensor(hass, package_id, api_key, update_interval) for package_id in registrations], False)
+    return await component.async_add_entities([DHLSensor(hass, package_id, api_key, update_interval) for package_id in registrations], False)
 
 
 def _load_config(filename):
@@ -127,8 +127,8 @@ def _load_config(filename):
     return []
 
 
-class PostnordSensor(RestoreEntity):
-    """Postnord Sensor."""
+class DHLSensor(RestoreEntity):
+    """DHL Sensor."""
 
     def __init__(self, hass, package_id, api_key, update_interval):
         """Initialize the sensor."""
@@ -167,8 +167,13 @@ class PostnordSensor(RestoreEntity):
 
     def _update(self):
         """Update sensor state."""
-        response = requests.get(POSTNORD_API_findByIdentifier_URL.format(self._api_key,
-            self._package_id), timeout=10)
+        response = requests.get(
+                DHL_API_track_shipments_URL.format(self._package_id),
+                headers = {
+                    'Accept': 'application/json',
+                    'DHL-API-Key': self._api_key,
+                    },
+                timeout=10)
 
         if response.status_code != 200:
             _LOGGER.error("API returned {}".format(response.status_code))
@@ -176,21 +181,32 @@ class PostnordSensor(RestoreEntity):
 
         response = response.json()
 
-        if "TrackingInformationResponse" not in response or "shipments" not in response["TrackingInformationResponse"]:
+        if "shipments" not in response:
             _LOGGER.error("API returned unknown json structure")
             return
 
-        for shipment in response["TrackingInformationResponse"]["shipments"]:
-            if shipment["shipmentId"] == self._package_id:
-                # Found the right shipment
-                self._state = shipment.get("status", STATE_UNKNOWN)
-                self._attributes = {}
-                self._attributes["from"] = shipment.get("consignor", {}).get("name", STATE_UNKNOWN)
-                self._attributes["status"] = shipment.get("statusText", {}).get("header", STATE_UNKNOWN)
-                self._attributes["type"] = shipment.get("service", {}).get("name", STATE_UNKNOWN)
+        for shipment in response["shipments"]:
+            if shipment["id"] == self._package_id:
+                # Debug log whole structure for future work
+                _LOGGER.debug(shipment["id"])
 
+                # Found the right shipment
+                self._state = shipment.get("status", {}).get("status", STATE_UNKNOWN)
+
+                self._attributes = {}
+                # Just put something there
+                try:
+                    oa = shipment.get("origin", {}).get("address", {})
+                    self._attributes["from countryCode"] = oa.get("countryCode", "UNKNOWN")
+                    self._attributes["from addressLocality"] = oa.get("addressLocality", "UNKNOWN")
+
+                    da = shipment.get("destination", {}).get("address", {})
+                    self._attributes["destination countryCode"] = da.get("countryCode", "UNKNOWN")
+                    self._attributes["destination addressLocality"] = da.get("addressLocality", "UNKNOWN")
+                except:
+                    pass
             else:
-                _LOGGER.info("Found other shipmentId {}".format(shipment["shipmentId"]))
+                _LOGGER.info("Found other id {}".format(shipment["id"]))
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
