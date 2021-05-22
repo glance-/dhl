@@ -1,6 +1,7 @@
 {
   "domain": "dhl",
   "name": "DHL",
+  "version": "1.0",
   "documentation": "Not yet",
   "requirements": [],
   "dependencies": [],
