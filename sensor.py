@@ -191,11 +191,13 @@ class DHLSensor(RestoreEntity):
                 _LOGGER.debug(shipment)
 
                 # Found the right shipment
-                self._state = shipment.get("status", {}).get("status", STATE_UNKNOWN)
+                self._state = shipment.get("status", {}).get("statusCode", STATE_UNKNOWN)
 
                 self._attributes = {}
                 # Just put something there
                 try:
+                    self._attributes["status"] = shipment.get("status", {}).get("status", STATE_UNKNOWN)
+
                     oa = shipment.get("origin", {}).get("address", {})
                     self._attributes["from countryCode"] = oa.get("countryCode", "UNKNOWN")
                     self._attributes["from addressLocality"] = oa.get("addressLocality", "UNKNOWN")
