@@ -17,7 +17,8 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.util.json import load_json, save_json
+from homeassistant.util.json import load_json
+from homeassistant.helpers.json import save_json
 from homeassistant.util import Throttle
 from homeassistant.helpers.entity_component import EntityComponent
 
