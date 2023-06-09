@@ -61,11 +61,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Setup the dhl sensor"""
     component = hass.data.get(DOMAIN)
 
+    update_interval = config.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL)
+
     # Use the EntityComponent to track all packages, and create a group of them
     if component is None:
-        component = hass.data[DOMAIN] = EntityComponent(_LOGGER, DOMAIN, hass)
-
-    update_interval = config.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL)
+        component = hass.data[DOMAIN] = EntityComponent(_LOGGER, DOMAIN, hass,
+                update_interval)
 
     json_path = hass.config.path(REGISTRATIONS_FILE)
 
@@ -85,7 +86,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         await hass.async_add_job(save_json, json_path, registrations)
 
         return await component.async_add_entities([
-            DHLSensor(hass, package_id, api_key, update_interval)])
+            DHLSensor(hass, package_id, api_key)])
 
     hass.services.async_register(
         DOMAIN,
@@ -116,7 +117,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     if registrations is None:
         return None
 
-    return await component.async_add_entities([DHLSensor(hass, package_id, api_key, update_interval) for package_id in registrations], False)
+    return await component.async_add_entities([DHLSensor(hass, package_id, api_key) for package_id in registrations], False)
 
 
 def _load_config(filename):
@@ -131,7 +132,7 @@ def _load_config(filename):
 class DHLSensor(RestoreEntity):
     """DHL Sensor."""
 
-    def __init__(self, hass, package_id, api_key, update_interval):
+    def __init__(self, hass, package_id, api_key):
         """Initialize the sensor."""
         self.hass = hass
         self._package_id = package_id
@@ -139,7 +140,6 @@ class DHLSensor(RestoreEntity):
         self._attributes = None
         self._state = None
         self._data = None
-        self.update = Throttle(update_interval)(self._update)
 
     @property
     def entity_id(self):
@@ -166,7 +166,7 @@ class DHLSensor(RestoreEntity):
         """Icon to use in the frontend."""
         return ICON
 
-    def _update(self):
+    def update(self):
         """Update sensor state."""
         response = requests.get(
                 DHL_API_track_shipments_URL.format(self._package_id),
